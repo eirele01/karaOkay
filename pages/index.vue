@@ -104,7 +104,8 @@
       
       <p class="text-center text-slate-600 text-sm">
         Supports YouTube Karaoke Videos.<br>
-        Multi-device sync via Firebase.
+        Multi-device sync via Firebase.<br>
+        © EJ Boter
       </p>
     </div>
   </div>

@@ -38,9 +38,9 @@
         />
         <button 
           @click="handleLinkSearch"
-          class="bg-gradient-to-r from-emerald-500 to-lime-600 hover:from-emerald-400 hover:to-lime-500 text-white font-bold px-4 py-2 rounded-lg shadow-lg hover:shadow-emerald-500/20 transition-all transform hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2"
+          class="bg-gradient-to-r from-emerald-500 to-lime-600 hover:from-emerald-400 hover:to-lime-500 text-white font-bold px-4 rounded-lg shadow-lg hover:shadow-emerald-500/20 transition-all transform hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2"
         >
-          <span>Add</span>
+          <span class="hidden sm:block">Add</span>
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
         </button>
       </div>
@@ -101,7 +101,7 @@
                      <input type="password" v-model="tempKey" placeholder="Paste API Key" class="flex-1 bg-slate-950 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:border-indigo-500 outline-none" />
                      <button @click="saveLocalKey" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 rounded font-bold">Save</button>
                 </div>
-                
+
                 <div v-else class="flex items-center gap-2">
                     <span class="text-xs text-green-400">● Saved locally</span>
                     <span class="text-[10px] text-slate-500 font-mono">({{ localKey.substring(0, 6) }}...)</span>
@@ -164,10 +164,10 @@
         />
         <button 
           @click="performSearch"
-          class="bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-bold px-6 py-2 rounded-lg shadow-lg hover:shadow-rose-500/20 transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          class="bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-bold px-4 rounded-lg shadow-lg hover:shadow-rose-500/20 transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           :disabled="searching"
         >
-          <span>{{ searching ? 'Searching...' : 'Search' }}</span>
+          <span class="hidden sm:block">{{ searching ? 'Searching...' : 'Search' }}</span>
           <svg v-if="!searching" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
         </button>
       </div>

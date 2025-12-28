@@ -54,7 +54,7 @@
       </div>
       
       <!-- Remote Mode Placeholder -->
-      <div v-else class="flex-1 flex flex-col items-center justify-center min-h-[300px] bg-slate-900/30 rounded-xl border border-slate-800 border-dashed p-8 text-center animate-fade-in">
+      <div v-else class="flex-1 flex flex-col items-center justify-center min-h-[350px] bg-slate-900/30 rounded-xl border border-slate-800 border-dashed p-8 text-center animate-fade-in">
           <div class="text-6xl mb-4 opacity-50">📱</div>
           <h2 class="text-xl font-bold text-white mb-2">Remote Control Mode</h2>
           <p class="text-slate-400 text-sm max-w-xs mx-auto mb-2">
@@ -73,7 +73,7 @@
 
            <button 
                 @click="showPlayer = true"
-                class="mt-8 text-xs text-slate-500 hover:text-white underline"
+                class="mt-2 text-xs text-slate-500 hover:text-white underline"
             >
                 Show Video Player
             </button>
