@@ -4,7 +4,7 @@
       <!-- Header -->
       <div class="text-center">
         <h1 class="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-rose-400 to-purple-500 mb-2">
-          KaraOkay
+          KaraOkey
         </h1>
         <p class="text-slate-400">
           The instant, serverless karaoke room.
