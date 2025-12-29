@@ -117,6 +117,7 @@ import { useRoomStore } from '~/stores/room'
 const activeTab = ref<'join' | 'create'>('create')
 const loading = ref(false)
 const router = useRouter()
+const route = useRoute()
 const roomStore = useRoomStore()
 
 const joinForm = reactive({
@@ -133,12 +134,7 @@ async function handleJoin() {
   if (!joinForm.roomId || !joinForm.userName) return
   loading.value = true
   try {
-    // Navigate to room, let layout handle joining via URL params/store init
-    // Or simpler: set store and verify existance first.
-    // For now, direct navigation.
-    // Ideally we store "myName" in localstorage or pinia persisting across route change.
-    
-    // We'll pass query params for setup
+    //  pass query params for setup
     await router.push({ 
         path: `/room/${joinForm.roomId}`,
         query: { name: joinForm.userName }
@@ -169,4 +165,10 @@ async function handleCreate() {
     loading.value = false
   }
 }
+
+onMounted(() => {
+  const room = route.query.room
+  if (typeof room === 'string') joinForm.roomId = room
+  if (room) activeTab.value = 'join'
+})
 </script>

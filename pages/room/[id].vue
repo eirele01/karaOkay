@@ -160,7 +160,6 @@ onMounted(async () => {
     const name = route.query.name as string
     if (!name) {
         // Redirect to home if no name
-        // Or prompt? For now redirect.
         await router.push(`/?room=${roomId.value}`)
         return
     }
