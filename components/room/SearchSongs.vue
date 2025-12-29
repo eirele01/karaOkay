@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+  <div class="bg-slate-800/50 rounded-xl p-4 border border-slate-700 relative">
     <h3 class="font-bold text-white mb-4 flex items-center gap-2">
       <span>🔍</span> Add Song
     </h3>
@@ -72,7 +72,10 @@
          <div class="bg-slate-900 rounded-lg p-3 flex gap-3 items-center border border-rose-500/30">
           <img :src="`https://img.youtube.com/vi/${previewId}/mqdefault.jpg`" class="w-16 h-12 object-cover rounded bg-slate-800" />
           <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-white truncate">Video ID: {{ previewId }}</p>
+            <p class="text-sm font-medium text-white truncate">
+                <span v-if="loadingPreview" class="text-slate-400 italic">Fetching info...</span>
+                <span v-else>{{ previewTitle }}</span>
+            </p>
             <button 
               @click="addPreviewToQueue"
               class="mt-1 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold px-3 py-1 rounded-lg w-full"
@@ -90,10 +93,10 @@
         <!-- API Key Input for Mode 3 -->
         <div v-if="mode === 'api'" class="mb-4 space-y-3">
 
-            <!-- 1. My Personal Key -->
+            <!-- 1. API Key -->
             <div class="bg-indigo-900/20 border border-indigo-500/30 p-3 rounded-lg animate-fade-in">
                 <div class="flex justify-between items-center mb-2">
-                    <p class="text-[10px] text-indigo-300 font-bold uppercase tracking-wider">My Personal Key</p>
+                    <p class="text-[10px] text-indigo-300 font-bold uppercase tracking-wider">Youtube API Key</p>
                     <button v-if="localKey" @click="clearLocalKey" class="text-[10px] text-red-400 hover:text-red-300">Clear</button>
                 </div>
                 
@@ -172,42 +175,79 @@
         </button>
       </div>
       
-      <!-- Results Grid -->
-      <div v-if="searchResults.length > 0" class="grid grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto pr-1">
+       <!-- Search Results -->
+       <div v-if="displayedResults.length > 0" class="space-y-3 pb-4 max-h-[45vh] overflow-y-auto pr-2 custom-scrollbar">
           <div 
-            v-for="item in searchResults" 
-            :key="item.id"
-            class="group relative bg-slate-900 rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-rose-500 transition-all border border-slate-800"
-            @click="addResultToQueue(item)"
+            v-for="video in displayedResults" 
+            :key="video.id"
+            @click="addSongToQueue(video)"
+            class="flex gap-4 p-3 bg-slate-800/50 rounded-xl hover:bg-slate-800 transition-colors cursor-pointer group hover:ring-1 hover:ring-rose-500/50 active:scale-[0.99] transform duration-100 m-1"
           >
-            <div class="aspect-video w-full relative bg-slate-950">
-                <img :src="item.thumbnail" class="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity" loading="lazy" />
-                <div class="absolute bottom-1 right-1 bg-black/80 text-white text-[9px] px-1 rounded font-mono" v-if="item.duration">
-                    {{ item.duration }}
-                </div>
-                <div class="absolute top-1 left-1 bg-indigo-600/80 text-white text-[8px] px-1 rounded" v-if="item.isCached">
-                    CACHED
-                </div>
-                <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/40 transition-all">
-                    <span class="text-3xl text-white">⊕</span>
+            <!-- Thumbnail -->
+            <div class="relative w-32 aspect-video flex-shrink-0 bg-black rounded-lg overflow-hidden group-hover:ring-2 ring-rose-500/50 transition-all">
+                <img :src="video.thumbnail" class="w-full h-full object-cover opacity-90 group-hover:opacity-100" />
+                <div v-if="video.duration" class="absolute bottom-1 right-1 bg-black/80 text-[10px] px-1.5 py-0.5 rounded text-white font-mono">
+                    {{ video.duration }}
                 </div>
             </div>
-            
-            <div class="p-2">
-                <p class="text-xs font-bold text-white line-clamp-2 leading-tight" v-html="item.title"></p>
-                <div class="flex justify-between items-center mt-1">
-                    <p class="text-[10px] text-slate-400 truncate max-w-[70%]">{{ item.uploaderName || 'Unknown' }}</p>
-                </div>
+
+            <!-- Info -->
+            <div class="flex-1 flex flex-col justify-center min-w-0">
+                <h3 class="font-bold text-white text-xs line-clamp-2 leading-tight mb-1" v-html="video.title"></h3>
+                <p class="text-xs text-slate-400 truncate">{{ video.uploaderName }}</p>
+                <!-- Cache Badge -->
+                <p v-if="video.isCached" class="text-[8px] text-emerald-400 mt-1 flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    Community Library
+                </p>
+            </div>
+
+            <!-- Action (Visual Only) -->
+            <div 
+                class="self-center bg-slate-700 group-hover:bg-rose-600 text-white p-2 rounded-full transition-colors flex-shrink-0"
+            >
+                <PlusIcon class="w-5 h-5" />
             </div>
           </div>
-      </div>
+
+          <!-- Infinite Scroll Trigger -->
+          <div ref="loadMoreTrigger" class="h-8 flex items-center justify-center">
+              <span v-if="displayedResults.length < searchResults.length" class="text-xs text-slate-500 animate-pulse">
+                Loading more songs...
+              </span>
+              <span v-else-if="searchResults.length > 20" class="text-xs text-slate-600">
+                End of results
+              </span>
+          </div>
+       </div>
 
        <!-- Status / Errors -->
-       <div v-if="searchResults.length === 0 && !searching && searchQuery" class="text-center p-8 bg-slate-900/30 rounded-xl">
-           <p class="text-sm text-slate-400 mb-2">No results found.</p>
+       <div v-if="searchResults.length === 0 && !searching" class="text-center p-8 bg-slate-900/30 rounded-xl">
+           <p class="text-sm text-slate-400 mb-2">
+                {{ searchQuery ? 'No results found.' : (mode === 'search' ? 'No cached songs yet. Search to add some!' : 'Enter a search term.') }}
+           </p>
            <p v-if="errorMsg" class="text-xs text-red-400 bg-red-900/10 p-2 rounded border border-red-900/30">{{ errorMsg }}</p>
        </div>
       
+       <!-- Toast Notification -->
+       <Transition
+          enter-active-class="transition ease-out duration-300 transform"
+          enter-from-class="opacity-0 translate-y-4 scale-95"
+          enter-to-class="opacity-100 translate-y-0 scale-100"
+          leave-active-class="transition ease-in duration-200 transform"
+          leave-from-class="opacity-100 translate-y-0 scale-100"
+          leave-to-class="opacity-0 translate-y-4 scale-95"
+       >
+          <div v-if="showToast" class="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:bottom-6 md:w-auto md:min-w-[300px] bg-slate-900 border border-slate-700 shadow-2xl shadow-black text-white px-4 py-3 rounded-lg flex items-center gap-3 z-[100] border-l-4 border-l-emerald-500">
+              <div class="bg-emerald-500/20 p-2 rounded-full text-emerald-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </div>
+              <div>
+                  <h4 class="font-bold text-sm text-white">Song Added</h4>
+                  <p class="text-xs text-slate-400">{{ toastMessage }}</p>
+              </div>
+          </div>
+       </Transition>
     </div>
 
   </div>
@@ -231,6 +271,9 @@ const query = ref('')
 const previewId = ref('')
 
 // Link Logic
+const previewTitle = ref('')
+const loadingPreview = ref(false)
+
 function extractVideoId(input: string): string | null {
   const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
   const match = input.match(regExp);
@@ -239,17 +282,60 @@ function extractVideoId(input: string): string | null {
   return null;
 }
 
-function handleLinkSearch() {
+async function handleLinkSearch() {
   const id = extractVideoId(query.value)
-  if (id) previewId.value = id
-  else alert("Invalid YouTube Link or ID")
+  if (!id) {
+    alert("Invalid YouTube Link or ID")
+    return
+  }
+  
+  previewId.value = id
+  previewTitle.value = `Video ID: ${id}` // Fallback initially
+  loadingPreview.value = true
+
+  // Fetch Metadata Immediately
+  try {
+      // Primary: Piped API
+      const res = await fetch(`https://pipedapi.kavin.rocks/streams/${id}`)
+      if (res.ok) {
+          const data = await res.json()
+          if (data.title) previewTitle.value = data.title
+      } else {
+        throw new Error("Piped failed")
+      }
+  } catch (e) {
+      // Fallback: NoEmbed (Reliable for titles)
+      try {
+          const res2 = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${id}`)
+          const data2 = await res2.json()
+          if (data2.title) previewTitle.value = data2.title
+      } catch (e2) {
+          console.warn("All metadata fetches failed", e2)
+      }
+  } finally {
+      loadingPreview.value = false
+  }
 }
 
-function addPreviewToQueue() {
+async function addPreviewToQueue() {
   if (!previewId.value) return
-  emit('add', { youtubeId: previewId.value, title: `YouTube Video (${previewId.value})` })
+
+  const title = previewTitle.value !== `Video ID: ${previewId.value}` ? previewTitle.value : `YouTube Video (${previewId.value})`
+  const thumbnail = `https://img.youtube.com/vi/${previewId.value}/mqdefault.jpg`
+
+  emit('add', { youtubeId: previewId.value, title: title })
+  
+  // Cache the song
+  roomStore.cacheSong({
+      youtubeId: previewId.value,
+      title: title,
+      thumbnail: thumbnail,
+      url: `https://www.youtube.com/watch?v=${previewId.value}`
+  })
+
   query.value = ''
   previewId.value = ''
+  previewTitle.value = ''
 }
 
 // Search Logic
@@ -292,7 +378,7 @@ function clearLocalKey() {
 // Sharing Logic
 async function shareKeyToRoom() {
     if (!localKey.value) return
-    if (!confirm("Are you sure? Everyone in this room will use YOUR quota (100 queries/day).")) return
+    if (!confirm("Are you sure? Everyone in this room will use API (1000 songs/day).")) return
     await roomStore.setRoomApiKey(localKey.value)
 }
 
@@ -308,55 +394,128 @@ const PIPED_INSTANCES = [
     'https://pa.il.ax'
 ]
 
-async function performSearch() {
-    if (!searchQuery.value) return
-    searching.value = true
-    errorMsg.value = ''
-    searchResults.value = []
-    
-    // 1. If Free Search, Check Firebase Cache FIRST
+// Cache State
+const allCachedSongs = ref<any[]>([])
+const displayLimit = ref(20)
+const loadMoreTrigger = ref<HTMLElement | null>(null)
+let observer: IntersectionObserver | null = null
+
+// Computed: Only render a subset of results for performance
+const displayedResults = computed(() => {
+    return searchResults.value.slice(0, displayLimit.value)
+})
+
+// Lifecycle: Fix initial load
+onMounted(() => {
     if (mode.value === 'search') {
-        try {
-            // Very basic prefix search on global songs cache
-            // Note: Firebase is case-sensitive and simple. 
-            // We'll search by title? Actually we can't easily SEARCH by title without an index.
-            // But we can fetch recent songs or similar?
-            // Let's trying fetching ALL cached songs (limit 50) and CLIENT filtering?
-            // If the cache is small it works. If large, we need Algolia.
-            // For now, let's just fetch the last 100 played songs and see if any match.
-            // This is a "Community Favorites" approach.
-            
-            const songsRef = dbQuery(dbRef($db, 'songs'), limitToFirst(100))
-            const snapshot = await get(songsRef)
-            const cache = snapshot.val()
-            
-            if (cache) {
-                const terms = searchQuery.value.toLowerCase().split(' ')
-                const matches = Object.values(cache)
-                    .filter((s: any) => {
-                        const t = s.title.toLowerCase()
-                        return terms.every(term => t.includes(term))
-                    })
-                    .slice(0, 10) // Top 10 matches
-                    .map((s: any) => ({
-                        ...s,
-                        id: s.youtubeId, // Fix: SearchSongs expects 'id' for key/adding
-                        isCached: true
-                    }))
-                
-                searchResults.value = [...matches]
-            }
-        } catch (e) {
-            console.warn("Cache lookup failed", e)
+        loadAllCache()
+    }
+    setupIntersectionObserver()
+})
+
+onUnmounted(() => {
+    if (observer) observer.disconnect()
+})
+
+// Watchers
+watch(mode, async (newMode) => {
+    if (newMode === 'search') {
+        if (allCachedSongs.value.length === 0) await loadAllCache()
+        else searchResults.value = allCachedSongs.value // Restore instant access
+    }
+})
+
+// Reset pagination when results change
+watch(searchResults, () => {
+    displayLimit.value = 20
+    // Re-connect observer if we have more results to show
+    nextTick(() => {
+        if (observer && loadMoreTrigger.value) {
+            observer.disconnect()
+            observer.observe(loadMoreTrigger.value)
         }
+    })
+})
+
+function setupIntersectionObserver() {
+    observer = new IntersectionObserver((entries) => {
+        if (entries && entries[0] && entries[0].isIntersecting) {
+            loadMore()
+        }
+    }, { rootMargin: '100px' })
+}
+
+function loadMore() {
+    if (displayLimit.value < searchResults.value.length) {
+        displayLimit.value += 20
+    }
+}
+
+async function loadAllCache() {
+    try {
+        // Fetch a larger chunk since we are paginating the RENDER
+        const songsRef = dbQuery(dbRef($db, 'songs'), limitToFirst(500))
+        const snapshot = await get(songsRef)
+        const cache = snapshot.val()
+        
+        if (cache) {
+            allCachedSongs.value = Object.values(cache).map((s: any) => ({
+                 ...s,
+                 id: s.youtubeId,
+                 isCached: true
+            })).sort((a: any, b: any) => a.title.localeCompare(b.title))
+            
+            // If no search query, show these immediately
+            if (!searchQuery.value) {
+                searchResults.value = allCachedSongs.value
+            }
+        }
+    } catch (e) {
+        console.warn("Failed to load cache", e)
+    }
+}
+
+// Watch search query to toggle between Cache List and Search Results
+watch(searchQuery, (newVal) => {
+    if (!newVal && mode.value === 'search') {
+        searchResults.value = allCachedSongs.value
+        errorMsg.value = ''
+    }
+})
+
+async function performSearch() {
+    // If empty query, reload cache
+    if (!searchQuery.value) {
+        if (mode.value === 'search') {
+             searchResults.value = allCachedSongs.value
+        }
+        return
     }
 
-    // If we have cache results, great! But user might want more.
-    // If fewer than 5 results, we continue to Piped/API.
-    if (searchResults.value.length >= 5) {
+    searching.value = true
+    errorMsg.value = ''
+    // Don't clear immediately to prevent UI flash, but we must new results
+    
+    // 1. If Free Search, Check Firebase Cache FIRST
+    let cacheMatches: any[] = []
+    if (mode.value === 'search') {
+        // Client-side filter of loaded cache first (instant)
+        const terms = searchQuery.value.toLowerCase().split(' ')
+        cacheMatches = allCachedSongs.value.filter((s: any) => {
+            const t = s.title.toLowerCase()
+            return terms.every(term => t.includes(term))
+        })
+    }
+
+    // If we have plenty of cache results, just show them
+    if (cacheMatches.length >= 5) {
+        searchResults.value = cacheMatches
         searching.value = false
         return
     }
+
+    // Otherwise, fetch from API
+    searchResults.value = cacheMatches // Show what we have while loading...
 
     const q = `${searchQuery.value} karaoke`
 
@@ -382,8 +541,7 @@ async function performSearch() {
             
             searchResults.value = newResults
             
-            // Cache these results for future users!
-            // We don't wait for this.
+            // Cache these results
             newResults.forEach((s: any) => {
                 roomStore.cacheSong({
                     youtubeId: s.id,
@@ -416,10 +574,12 @@ async function performSearch() {
                         
                         // Merge with existing cache results (deduplicate)
                         const existingIds = new Set(searchResults.value.map(r => r.id))
+                        const finalResults = [...searchResults.value]
                         pipedResults.forEach((r: any) => {
-                            if (!existingIds.has(r.id)) searchResults.value.push(r)
+                            if (!existingIds.has(r.id)) finalResults.push(r)
                         })
                         
+                        searchResults.value = finalResults
                         success = true
                         break
                     }
@@ -446,7 +606,11 @@ function formatDuration(s: any): string {
     return `${m}:${r.toString().padStart(2, '0')}`
 }
 
-function addResultToQueue(item: any) {
+// Toast State
+const showToast = ref(false)
+const toastMessage = ref('')
+
+function addSongToQueue(item: any) {
     emit('add', { youtubeId: item.id, title: item.title })
     // Also cache if adding from free search!
     roomStore.cacheSong({
@@ -455,5 +619,10 @@ function addResultToQueue(item: any) {
         thumbnail: item.thumbnail,
         url: item.url || `https://www.youtube.com/watch?v=${item.id}`
     })
+
+    // Show visual feedback (Toast)
+    toastMessage.value = item.title
+    showToast.value = true
+    setTimeout(() => showToast.value = false, 2000)
 }
 </script>

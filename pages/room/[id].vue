@@ -173,8 +173,6 @@ function handleAddSong(song: { youtubeId: string, title: string }) {
         title: song.title,
         addedBy: roomStore.userName
     })
-    // Switch to queue to see it
-    tab.value = 'queue'
 }
 
 function togglePlay() {
